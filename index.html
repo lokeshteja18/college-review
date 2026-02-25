@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apollo Engineering College Reviews</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body{
+    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:700px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    color:white;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:10px;
+}
+
+#avgRating{
+    text-align:center;
+    margin-bottom:15px;
+    color:#ffd700;
+}
+
+input, textarea{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    outline:none;
+    font-size:14px;
+}
+
+textarea{
+    resize:none;
+    height:100px;
+}
+
+.stars{
+    margin:15px 0;
+    display:flex;
+    gap:8px;
+    font-size:28px;
+    cursor:pointer;
+}
+
+.star{ color:gray; }
+.star.active{ color:gold; }
+
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(45deg,#ff512f,#dd2476);
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+.review-box{ margin-top:30px; }
+
+.review-card{
+    background:rgba(255,255,255,0.1);
+    padding:15px;
+    border-radius:15px;
+    margin-top:15px;
+}
+
+.rating-display{ color:gold; }
+
+.delete-btn{
+    background:#ff4444;
+    margin-top:8px;
+}
+
+.thank-you{
+    position:fixed;
+    top:20px;
+    right:20px;
+    background:#00c851;
+    padding:12px 20px;
+    border-radius:10px;
+    color:white;
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>⭐ Apollo Engineering College ⭐</h1>
+    <div id="avgRating"></div>
+
+    <h2>Write Your Review:</h2>
+
+    <input type="text" id="name" placeholder="Your Name">
+    <textarea id="review" placeholder="Write your review..."></textarea>
+
+    <div class="stars">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+    </div>
+
+    <button onclick="submitReview()">Submit Review</button>
+
+    <div class="review-box" id="reviewList">
+        <h2>Student Reviews:</h2>
+    </div>
+</div>
+
+<div class="thank-you" id="thankYouMsg">
+    Thank you for your review!
+</div>
+
+<script>
+let selectedRating = 0;
+const adminPassword = "apollo123";
+let reviews = JSON.parse(localStorage.getItem("apolloReviews")) || [];
+
+const stars = document.querySelectorAll('.star');
+
+stars.forEach(star => {
+    star.addEventListener('click', function(){
+        selectedRating = this.getAttribute('data-value');
+        updateStars();
+    });
+});
+
+function updateStars(){
+    stars.forEach(star=>{
+        star.classList.remove('active');
+        if(star.getAttribute('data-value') <= selectedRating){
+            star.classList.add('active');
+        }
+    });
+}
+
+function submitReview(){
+    const name = document.getElementById("name").value;
+    const review = document.getElementById("review").value;
+
+    if(name === "" || review === "" || selectedRating == 0){
+        alert("Please fill all fields and select rating!");
+        return;
+    }
+
+    const reviewData = {
+        name: name,
+        text: review,
+        rating: selectedRating
+    };
+
+    reviews.push(reviewData);
+    localStorage.setItem("apolloReviews", JSON.stringify(reviews));
+
+    displayReviews();
+
+    document.getElementById("name").value = "";
+    document.getElementById("review").value = "";
+    selectedRating = 0;
+    updateStars();
+
+    const thankYou = document.getElementById("thankYouMsg");
+    thankYou.style.display = "block";
+    setTimeout(()=>{ thankYou.style.display = "none"; },3000);
+}
+
+function displayReviews(){
+    const reviewList = document.getElementById("reviewList");
+    reviewList.innerHTML = "<h2>Student Reviews:</h2>";
+
+    reviews.forEach((r,index)=>{
+        const card = document.createElement("div");
+        card.classList.add("review-card");
+
+        card.innerHTML = `
+            <h3>${r.name}</h3>
+            <div class="rating-display">${"★".repeat(r.rating)}</div>
+            <p>${r.text}</p>
+            <button class="delete-btn" onclick="deleteReview(${index})">Delete</button>
+        `;
+
+        reviewList.appendChild(card);
+    });
+
+    updateAverage();
+}
+
+function deleteReview(index){
+    const pass = prompt("Enter admin password:");
+    if(pass !== adminPassword){
+        alert("Wrong password!");
+        return;
+    }
+
+    reviews.splice(index,1);
+    localStorage.setItem("apolloReviews", JSON.stringify(reviews));
+    displayReviews();
+}
+
+function updateAverage(){
+    if(reviews.length === 0){
+        document.getElementById("avgRating").innerHTML = "";
+        return;
+    }
+
+    let total = 0;
+    reviews.forEach(r=> total += Number(r.rating));
+    const avg = (total/reviews.length).toFixed(1);
+
+    document.getElementById("avgRating").innerHTML =
+        `Average Rating: ${avg} ⭐ (${reviews.length} reviews)`;
+}
+
+displayReviews();
+</script>
+
+</body>
+</html>
